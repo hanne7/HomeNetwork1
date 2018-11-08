@@ -6,6 +6,8 @@ import threading
 import time
 import ctypes
 from random import *
+from bs4 import BeautifulSoup
+from gtts import gTTS
 
 g_Dehumid = False
 g_Humid = False
@@ -273,12 +275,102 @@ def simulator():
             outfile.write(retJson)
         print('simul_date04.json SAVED')
 
+def news_speaker(news):
+    # tts = gTTS(text=news, lang='ko')
+    # tts.save('ranking_news.wav')
+    print('ranking_news SAVED')
+
+def print_news(news):
+    num = 1
+    for i in news:
+        print(str(num) + '. ' + i)
+        num+=1
+
+def ranking_news():
+    news_link = 'https://news.naver.com'
+
+    html = urllib.request.urlopen('https://news.naver.com/main/ranking/popularDay.nhn')
+    soup = BeautifulSoup(html, 'html.parser')
+
+    tags = soup.findAll('ul', attrs={'class': 'section_list_ranking'})
+
+    news_url = []
+    num = 0
+    for news in tags:
+        with open('ranking_news%s.csv' % str(num + 1), 'w', encoding='utf-8') as outfile:
+            outfile.write(str(tags[num]))
+            num += 1
+
+    num = 0
+    for news in tags:
+        with open('ranking_news%s.csv' % str(num + 1), 'r', encoding='utf-8') as readfile:
+            a = readfile.readlines()
+            del a[11]
+            del a[0]
+            for line in a:
+                i = line.split('href="')
+                j = i[1].split('" title')
+                k = j[1].split('>')
+                m = k[1].split('<')
+                news_url.append(m[0] + '\n' + news_link + j[0].replace('&amp;', '&') + '\n')
+        num += 1
+
+    politic_news = news_url[:10]
+    economic_news = news_url[10:20]
+    social_news = news_url[20:30]
+    living_news = news_url[30:40]
+    world_news = news_url[40:50]
+    IT_news = news_url[50:]
+
+    print('1. 정치\n2. 경제\n3. 사회\n4. 생활/문화\n5. 세계\n6. IT/과학\n')
+    menu_num = int(input('메뉴를 선택하세요: '))
+    if menu_num == 1:
+        print_news(politic_news)
+        news_speaker(politic_news)
+    elif menu_num == 2:
+        print_news(economic_news)
+        news_speaker(economic_news)
+    elif menu_num == 3:
+        print_news(social_news)
+        news_speaker(social_news)
+    elif menu_num == 4:
+        print_news(living_news)
+        news_speaker(living_news)
+    elif menu_num == 5:
+        print_news(world_news)
+        news_speaker(world_news)
+    elif menu_num == 6:
+        print_news(IT_news)
+        news_speaker(IT_news)
+
+def smart_play():
+    while True:
+        print('1. 실시간 랭킹 뉴스 헤드라인')
+        print('2. 실시간 도로교통정보')
+        print('3. 실시간 뮤직차트')
+        print('4. 실시간 영화 랭킹')
+        print('5. 초기메뉴')
+
+        menu_num = int(input('메뉴를 선택하세요: '))
+        if menu_num == 1:
+            ranking_news()
+        elif menu_num == 2:
+            pass
+        elif menu_num == 3:
+            pass
+        elif menu_num == 4:
+            pass
+        elif menu_num == 5:
+            print('초기메뉴로 돌아갑니다.')
+            break
+
 def smart_mode():
     global g_AI_Mode, g_Dehumid, g_Humid, g_Balcony_Windows, humidMax, humidMin
     print('1. 인공지능 모드 조회')
     print('2. 인공지능 모드 상태 변경')
     print('3. 실시간 기상정보 Update')
     print('4. 시뮬레이터 모드')
+    print('5. 스마트 모드')
     menu_num = int(input('메뉴를 선택하세요: '))
     t = threading.Thread(target=update_scheduler)
 
@@ -306,7 +398,8 @@ def smart_mode():
             auto_control(result)
     elif menu_num == 4:
         simulator()
-
+    elif menu_num == 5:
+        smart_play()
 def update_scheduler():
     while True:
         if g_AI_Mode == False:
